@@ -1,0 +1,44 @@
+# RSNA Pneumonia Detection — pip 套件清單
+#
+# ⚠️ PyTorch 不在這裡！CUDA 版 torch 必須從 PyTorch 官方 index 安裝，
+#    由 setup_env.ps1 單獨處理（或見 docs/01_環境建置.md）。
+#
+# 安裝：pip install -r requirements.txt
+
+# ---------- 核心數值 / 資料處理 ----------
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+
+# ---------- 醫學影像 ----------
+pydicom>=2.4              # 讀取 .dcm 檔
+pylibjpeg>=2.0            # DICOM 壓縮格式解碼後備方案
+pylibjpeg-libjpeg>=2.1
+
+# ---------- 影像處理 ----------
+opencv-python>=4.9
+Pillow>=10.2
+scikit-image>=0.22
+
+# ---------- 視覺化（EDA 出圖用） ----------
+matplotlib>=3.8
+seaborn>=0.13
+
+# ---------- 機器學習 ----------
+scikit-learn>=1.4
+
+# ---------- 物件偵測 ----------
+ultralytics>=8.3          # YOLOv8 / YOLO11，baseline 主力
+timm>=1.0                 # 預訓練 backbone（二階段分類器用）
+albumentations>=1.4       # 資料增強
+ensemble-boxes>=1.0       # WBF 多模型框融合
+
+# ---------- 實驗管理 / 工具 ----------
+tqdm>=4.66
+PyYAML>=6.0
+kaggle>=1.6               # Kaggle API，下載資料用
+
+# ---------- Notebook ----------
+jupyterlab>=4.1
+ipykernel>=6.29
+ipywidgets>=8.1

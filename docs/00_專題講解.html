@@ -1,0 +1,498 @@
+<title>RSNA 肺炎偵測專題</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Noto+Serif+TC:wght@600;700;900&family=JetBrains+Mono:wght@400;700&display=swap">
+
+<style>
+/* 版面概念：讀片燈箱 — 深色片子區段切開淺色說明區，標註框的紅是唯一的強調色 */
+:root{
+  --bg:#F6F7F9;
+  --surface:#FFFFFF;
+  --surface-2:#EDEFF3;
+  --fg:#11161C;
+  --muted:#5C6672;
+  --line:#D9DEE5;
+  --accent:#D92D20;          /* 標註框的紅 */
+  --accent-soft:#FDECEA;
+  --film:#0B0E12;            /* 片子永遠是暗的 */
+  --film-fg:#C8D2DC;
+  --warn:#B25E09;
+  --warn-soft:#FDF2E3;
+  --ok:#1C7C54;
+  --ok-soft:#E6F3ED;
+
+  --f-display:"Noto Serif TC",Georgia,"Microsoft JhengHei",serif;
+  --f-body:"Noto Sans TC",-apple-system,"Microsoft JhengHei",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1216; --surface:#161B21; --surface-2:#1E252D;
+    --fg:#E7ECF1; --muted:#9AA6B2; --line:#2A323B;
+    --accent:#FF6B5E; --accent-soft:#2A1613;
+    --film:#06080B; --film-fg:#C8D2DC;
+    --warn:#E8A33D; --warn-soft:#2A2012;
+    --ok:#4ECB8F; --ok-soft:#102620;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1216; --surface:#161B21; --surface-2:#1E252D;
+  --fg:#E7ECF1; --muted:#9AA6B2; --line:#2A323B;
+  --accent:#FF6B5E; --accent-soft:#2A1613;
+  --film:#06080B; --film-fg:#C8D2DC;
+  --warn:#E8A33D; --warn-soft:#2A2012;
+  --ok:#4ECB8F; --ok-soft:#102620;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg); color:var(--fg);
+  font-family:var(--f-body); font-size:16px; line-height:1.75;
+  margin:0; -webkit-font-smoothing:antialiased;
+}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:20;background:var(--surface)}
+
+.wrap{
+  max-width:860px; margin:0 auto;
+  padding-left:max(20px,env(safe-area-inset-left,0px));
+  padding-right:max(20px,env(safe-area-inset-right,0px));
+}
+
+/* ---------- 導覽 ---------- */
+.nav{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:15;
+  background:var(--surface); border-bottom:1px solid var(--line);
+}
+.nav .wrap{display:flex; gap:4px; align-items:center; padding-block:10px; overflow-x:auto; scrollbar-width:none}
+.nav .wrap::-webkit-scrollbar{display:none}
+.nav a{
+  color:var(--muted); text-decoration:none; font-size:13.5px; font-weight:500;
+  padding:5px 10px; border-radius:6px; white-space:nowrap;
+}
+.nav a:hover{color:var(--fg); background:var(--surface-2)}
+.nav b{font-family:var(--f-display);font-size:14px;color:var(--fg);margin-right:10px;white-space:nowrap}
+
+/* ---------- 區塊 ---------- */
+section{padding-block:56px; border-top:1px solid var(--line)}
+section:first-of-type{border-top:0}
+.eyebrow{
+  font-size:11.5px; font-weight:700; letter-spacing:.14em; text-transform:uppercase;
+  color:var(--accent); margin:0 0 10px;
+}
+h1{font-family:var(--f-display); font-weight:900; font-size:clamp(30px,6.2vw,46px); line-height:1.2; margin:0 0 16px; text-wrap:balance}
+h2{font-family:var(--f-display); font-weight:700; font-size:clamp(22px,4.2vw,30px); line-height:1.3; margin:0 0 18px; text-wrap:balance}
+h3{font-size:17px; font-weight:700; margin:28px 0 10px}
+p{margin:0 0 14px; max-width:68ch}
+a{color:var(--accent)}
+.lead{font-size:18px; color:var(--muted)}
+.muted{color:var(--muted)}
+code{font-family:var(--f-mono); font-size:.88em; background:var(--surface-2); padding:2px 6px; border-radius:4px}
+
+/* ---------- 燈箱 ---------- */
+.film{background:var(--film); color:var(--film-fg); border-radius:14px; padding:24px; overflow:hidden}
+.hero{display:grid; grid-template-columns:1.15fr .85fr; gap:30px; align-items:center}
+@media(max-width:700px){.hero{grid-template-columns:1fr}}
+.hero svg{width:100%; height:auto; max-width:100%; display:block}
+.filmcap{font-family:var(--f-mono); font-size:11px; letter-spacing:.06em; color:#7D8A97; margin-top:12px; text-align:center}
+
+/* ---------- 卡片 ---------- */
+.callout{
+  background:var(--accent-soft); border-left:4px solid var(--accent);
+  border-radius:0 10px 10px 0; padding:18px 20px; margin:22px 0;
+}
+.callout.warn{background:var(--warn-soft); border-color:var(--warn)}
+.callout.ok{background:var(--ok-soft); border-color:var(--ok)}
+.callout p:last-child{margin-bottom:0}
+.callout strong{font-weight:700}
+
+.grid{display:grid; gap:14px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:700px){.g2,.g3{grid-template-columns:1fr}}
+
+.card{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:18px 20px; min-width:0}
+.card h4{margin:0 0 8px; font-size:15.5px; font-weight:700; display:flex; gap:9px; align-items:baseline}
+.card p{font-size:14.5px; margin:0; color:var(--muted); line-height:1.7}
+.tag{
+  font-family:var(--f-mono); font-size:10.5px; font-weight:700; letter-spacing:.05em;
+  background:var(--accent); color:#fff; padding:2px 7px; border-radius:20px; flex:none;
+}
+
+/* ---------- 流程 ---------- */
+.steps{counter-reset:s; display:grid; gap:0; margin:24px 0 0}
+.step{display:grid; grid-template-columns:54px 1fr; gap:18px; padding:20px 0; border-top:1px solid var(--line)}
+.step:last-child{border-bottom:1px solid var(--line)}
+.step .n{
+  font-family:var(--f-mono); font-size:13px; font-weight:700; color:var(--accent);
+  border:1px solid var(--line); border-radius:8px; height:34px;
+  display:flex; align-items:center; justify-content:center; background:var(--surface);
+}
+.step h4{margin:3px 0 6px; font-size:16.5px; font-weight:700}
+.step p{font-size:14.5px; margin:0 0 6px; color:var(--muted)}
+.step .why{font-size:13.5px; color:var(--fg); background:var(--surface-2); border-radius:8px; padding:9px 12px; margin-top:8px}
+.step .why b{color:var(--accent)}
+
+/* ---------- 表格 ---------- */
+.tscroll{overflow-x:auto; margin:18px 0; border:1px solid var(--line); border-radius:10px}
+table{border-collapse:collapse; width:100%; font-size:14.5px; min-width:420px; background:var(--surface)}
+th,td{text-align:left; padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+th{background:var(--surface-2); font-weight:700; font-size:13px; white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.num{font-variant-numeric:tabular-nums; font-family:var(--f-mono); font-size:13px}
+.owner{display:inline-block; min-width:76px; border-bottom:1.5px dashed var(--muted); color:var(--muted); font-size:13px}
+
+pre{
+  font-family:var(--f-mono); font-size:12.5px; line-height:1.75;
+  background:var(--film); color:var(--film-fg); padding:16px 18px;
+  border-radius:10px; overflow-x:auto; margin:16px 0;
+}
+pre .hi{color:#FF8A7E}
+pre .dim{color:#67727E}
+
+ul{margin:0 0 14px; padding-left:22px} li{margin-bottom:7px; max-width:66ch}
+
+details{border:1px solid var(--line); border-radius:10px; background:var(--surface); margin-bottom:9px; overflow:hidden}
+summary{padding:14px 18px; cursor:pointer; font-weight:700; font-size:15px; list-style:none; display:flex; justify-content:space-between; gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+"; color:var(--accent); font-family:var(--f-mono); font-weight:700; flex:none}
+details[open] summary::after{content:"–"}
+details p{padding:0 18px 16px; margin:0; font-size:14.5px; color:var(--muted)}
+
+.check{list-style:none; padding:0; margin:18px 0 0}
+.check li{
+  display:flex; gap:12px; align-items:flex-start; padding:13px 16px; margin-bottom:8px;
+  background:var(--surface); border:1px solid var(--line); border-radius:10px; font-size:14.5px; max-width:none;
+}
+.check li::before{content:""; width:17px; height:17px; border:2px solid var(--muted); border-radius:4px; flex:none; margin-top:4px}
+
+footer{padding-block:40px 56px; border-top:1px solid var(--line); color:var(--muted); font-size:13.5px}
+footer a{color:var(--muted)}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:4px}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<nav class="nav">
+  <div class="wrap">
+    <b>RSNA 肺炎偵測</b>
+    <a href="#what">在做什麼</a>
+    <a href="#data">資料</a>
+    <a href="#score">評分</a>
+    <a href="#how">實作流程</a>
+    <a href="#week12">Week 12</a>
+    <a href="#todo">本週待辦</a>
+    <a href="#qa">Q&amp;A</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+<section id="top">
+  <p class="eyebrow">深度學習期末專題 · 組內講解</p>
+  <div class="hero">
+    <div>
+      <h1>給一張胸部 X 光，<br>自動框出肺炎的位置</h1>
+      <p class="lead">這是 2018 年北美放射學會（RSNA）在 Kaggle 辦的競賽。競賽雖然結束了，但還開放 Late Submission，我們交上去一樣看得到分數。</p>
+      <p class="muted" style="font-size:14.5px">這頁是開會用的白話版，看完大概 15 分鐘。看完你會知道：我們在做什麼、這東西怎麼實作、Week 12 你要交什麼、這禮拜你要做什麼。</p>
+    </div>
+    <div>
+      <div class="film">
+        <svg viewBox="0 0 300 300" role="img" aria-label="胸部 X 光示意圖，兩個紅色標註框圈出疑似肺炎的區域">
+          <defs>
+            <radialGradient id="lung" cx="50%" cy="42%" r="62%">
+              <stop offset="0%" stop-color="#4A5663"/>
+              <stop offset="100%" stop-color="#1B2129"/>
+            </radialGradient>
+            <linearGradient id="opac" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#9FAEBC" stop-opacity=".62"/>
+              <stop offset="100%" stop-color="#9FAEBC" stop-opacity=".12"/>
+            </linearGradient>
+          </defs>
+          <rect width="300" height="300" fill="#06080B"/>
+          <!-- 胸廓外框 -->
+          <path d="M60 46 C46 92,44 190,66 248 C96 272,204 272,234 248 C256 190,254 92,240 46 Z" fill="#11161C"/>
+          <!-- 左右肺野 -->
+          <path d="M96 62 C74 92,70 170,84 222 C94 252,124 254,135 232 C146 208,147 112,136 76 C130 58,110 50,96 62 Z" fill="url(#lung)"/>
+          <path d="M204 62 C226 92,230 170,216 222 C206 252,176 254,165 232 C154 208,153 112,164 76 C170 58,190 50,204 62 Z" fill="url(#lung)"/>
+          <!-- 脊椎 -->
+          <rect x="144" y="56" width="12" height="196" rx="6" fill="#2B333D"/>
+          <g stroke="#1B2129" stroke-width="1.6">
+            <line x1="144" y1="88" x2="156" y2="88"/><line x1="144" y1="118" x2="156" y2="118"/>
+            <line x1="144" y1="148" x2="156" y2="148"/><line x1="144" y1="178" x2="156" y2="178"/>
+            <line x1="144" y1="208" x2="156" y2="208"/>
+          </g>
+          <!-- 肋骨 -->
+          <g stroke="#39434F" stroke-width="1.5" fill="none" opacity=".85">
+            <path d="M74 92 C98 80,124 84,138 100"/><path d="M226 92 C202 80,176 84,162 100"/>
+            <path d="M72 126 C98 112,126 117,139 134"/><path d="M228 126 C202 112,174 117,161 134"/>
+            <path d="M74 160 C100 147,128 152,140 169"/><path d="M226 160 C200 147,172 152,160 169"/>
+            <path d="M80 194 C104 182,130 187,141 203"/><path d="M220 194 C196 182,170 187,159 203"/>
+          </g>
+          <!-- 肺炎陰影 -->
+          <ellipse cx="108" cy="150" rx="27" ry="40" fill="url(#opac)"/>
+          <ellipse cx="190" cy="163" rx="24" ry="34" fill="url(#opac)"/>
+          <!-- 標註框 -->
+          <g stroke="#FF5247" stroke-width="2.2" fill="none">
+            <rect x="80" y="106" width="56" height="88" rx="2"/>
+            <rect x="164" y="126" width="52" height="76" rx="2"/>
+          </g>
+          <g font-family="JetBrains Mono, monospace" font-size="9.5" fill="#FF8A7E" font-weight="700">
+            <text x="80" y="100">opacity 0.87</text>
+            <text x="164" y="120">opacity 0.81</text>
+          </g>
+        </svg>
+        <p class="filmcap">模型要輸出的就是這兩個紅框 — 座標 + 信心值</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout ok">
+    <p><strong>先講最重要的：Week 12 不用把專題做完。</strong></p>
+    <p>要交的只有<strong>清晰易懂的簡報 5 頁，一組繳交一份</strong>。注意第 4 頁寫的是「<strong>預期</strong>的實作方法」—— 意思是「我們打算這樣做」，不是「我們已經做完了」。有初步結果會加分，但那是加分，不是門檻。</p>
+    <p style="margin-bottom:0">所以這禮拜的目標是：<strong>講清楚我們懂這題、我們有計畫。</strong></p>
+  </div>
+</section>
+
+<section id="what">
+  <p class="eyebrow">01 — 先搞懂這件事</p>
+  <h2>這是「偵測」不是「分類」</h2>
+  <p>這點一定要先講清楚，不然後面全都會想歪。</p>
+
+  <div class="tscroll">
+    <table>
+      <tr><th></th><th>分類 Classification</th><th>偵測 Detection ← 我們要做的</th></tr>
+      <tr><td><b>問題</b></td><td>這張片子有沒有肺炎？</td><td>肺炎<b>在哪裡</b>？</td></tr>
+      <tr><td><b>輸出</b></td><td>一個答案：有 / 沒有</td><td>一堆<b>方框的座標</b></td></tr>
+      <tr><td><b>像什麼</b></td><td>考是非題</td><td>考「請在圖上圈出答案」</td></tr>
+      <tr><td><b>常用模型</b></td><td>ResNet、EfficientNet</td><td><b>YOLO</b>、Faster R-CNN</td></tr>
+    </table>
+  </div>
+
+  <p>所以我們的模型輸出長這樣：</p>
+<pre>這張片子 → [(x=264, y=152, 寬=213, 高=379, 信心=<span class="hi">0.87</span>),
+            (x=562, y=152, 寬=256, 高=453, 信心=<span class="hi">0.81</span>)]</pre>
+  <p>兩個框，通常是左肺一個、右肺一個。如果模型覺得沒肺炎，就<b>什麼框都不輸出</b>。所以「有沒有肺炎」這件事，是靠「有沒有輸出框」來表達的 —— 偵測把分類也包進去了。</p>
+
+  <h3>為什麼要做這個？</h3>
+  <p>肺炎在 X 光上長得像一塊「比較白、比較模糊的區域」。但肺積水、肺出血、肺塌陷、肺癌⋯⋯也都長這樣。連放射科醫師都要搭配病史才敢下診斷。醫院希望有個 AI 先幫忙篩一輪，把可疑的片子排前面，讓醫師優先看。</p>
+</section>
+
+<section id="data">
+  <p class="eyebrow">02 — 資料</p>
+  <h2>三個檔案就講完了</h2>
+
+  <div class="grid g3" style="margin-bottom:22px">
+    <div class="card"><h4><span class="tag">①</span>影像</h4><p>26,684 張胸部 X 光，格式是 <code>DICOM</code>（醫院專用格式），每張 1024×1024 灰階。用 <code>pydicom</code> 兩行就打開了。</p></div>
+    <div class="card"><h4><span class="tag">②</span>標註 CSV</h4><p>每個框一列：病人 ID、框的左上角座標、寬、高，加一個 0/1 的 Target。</p></div>
+    <div class="card"><h4><span class="tag">③</span>類別 CSV</h4><p>每張片子屬於三類中的哪一類。這個檔案藏著這題的大魔王。</p></div>
+  </div>
+
+  <h3>標註 CSV 長這樣</h3>
+<pre>patientId                              x     y     width  height  Target
+0004cfab-14fd-4e49-80ba-63a80b6bddd6   <span class="dim">NaN   NaN   NaN    NaN</span>     0    <span class="dim">← 沒肺炎，沒框</span>
+00436515-870c-4b36-a041-de91049b9ab4   264   152   213    379     <span class="hi">1</span>    <span class="dim">← 右肺的框</span>
+00436515-870c-4b36-a041-de91049b9ab4   562   152   256    453     <span class="hi">1</span>    <span class="dim">← 左肺的框</span></pre>
+
+  <p>要注意三件事：</p>
+  <ul>
+    <li><b>同一張片子可能有好幾列</b> —— 有幾個框就幾列</li>
+    <li><b>沒肺炎的那列，座標全是空的</b>（NaN）</li>
+    <li>座標是「<b>左上角 x, y ＋ 寬 ＋ 高</b>」，不是左上右下、也不是中心點</li>
+  </ul>
+
+  <h3>三個類別</h3>
+  <div class="tscroll">
+    <table>
+      <tr><th>類別</th><th>白話</th><th>要不要框</th></tr>
+      <tr><td><code>Normal</code></td><td>完全正常</td><td>不要</td></tr>
+      <tr><td><code>No Lung Opacity / Not Normal</code></td><td><b>不正常，但不是肺炎</b></td><td>不要</td></tr>
+      <tr><td><code>Lung Opacity</code></td><td>有肺炎陰影</td><td><b>要</b></td></tr>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p style="margin-bottom:0"><strong>第二類是這題的大魔王。</strong>它在影像上也有一塊白白的東西，但答案是「不要框」。模型最常在這裡出錯 —— 看到白影就框下去，結果扣分。這點放進簡報第 2 或第 3 頁，會顯得我們真的有讀懂資料。</p>
+  </div>
+</section>
+
+<section id="score">
+  <p class="eyebrow">03 — 評分</p>
+  <h2>這段最值錢，請耐心看</h2>
+
+  <h3>先懂 IoU</h3>
+  <p>IoU ＝ 兩個框「重疊的面積」÷「加起來的面積」。評分會從 IoU <b>0.4 掃到 0.75</b>，門檻越高代表要求越準。</p>
+
+  <div class="film" style="margin:18px 0">
+    <svg viewBox="0 0 560 150" role="img" aria-label="三種重疊程度的 IoU 示意：幾乎重疊、部分重疊、幾乎沒碰到">
+      <g fill="none" stroke-width="2.4">
+        <g transform="translate(40,24)">
+          <rect x="0" y="0" width="86" height="86" stroke="#8CA0B3" stroke-dasharray="5 4"/>
+          <rect x="10" y="9" width="86" height="86" stroke="#FF5247"/>
+          <rect x="10" y="9" width="76" height="77" fill="#FF5247" fill-opacity=".16" stroke="none"/>
+        </g>
+        <g transform="translate(220,24)">
+          <rect x="0" y="0" width="86" height="86" stroke="#8CA0B3" stroke-dasharray="5 4"/>
+          <rect x="42" y="30" width="86" height="86" stroke="#FF5247"/>
+          <rect x="42" y="30" width="44" height="56" fill="#FF5247" fill-opacity=".16" stroke="none"/>
+        </g>
+        <g transform="translate(410,24)">
+          <rect x="0" y="0" width="76" height="86" stroke="#8CA0B3" stroke-dasharray="5 4"/>
+          <rect x="84" y="20" width="62" height="66" stroke="#FF5247"/>
+        </g>
+      </g>
+      <g font-family="JetBrains Mono, monospace" font-size="12" fill="#8CA0B3" text-anchor="middle">
+        <text x="88" y="140">IoU ≈ 0.80　算對</text>
+        <text x="290" y="140">IoU ≈ 0.35　太低</text>
+        <text x="483" y="140">IoU = 0　完全錯</text>
+      </g>
+    </svg>
+    <p class="filmcap">虛線 = 正確答案　紅線 = 模型畫的框</p>
+  </div>
+
+  <h3>這題特別的地方：三個陷阱</h3>
+  <div class="grid g3">
+    <div class="card" style="border-color:var(--accent)">
+      <h4><span class="tag">陷阱一</span></h4>
+      <p><b style="color:var(--fg)">漏框跟多框，罰得一樣重。</b><br><br>一般的精確度只算「我畫的框對不對」，但這題的分母多了「漏掉的」：<br><br><code>答對 ÷ (答對＋畫錯＋漏掉)</code><br><br>所以不能只衝準確，也不能只衝全面，要抓平衡。</p>
+    </div>
+    <div class="card" style="border-color:var(--accent)">
+      <h4><span class="tag">陷阱二</span></h4>
+      <p><b style="color:var(--fg)">本來沒肺炎的片子，亂畫一個框 → 這張直接 0 分。</b><br><br>而且測試集裡大概 <b style="color:var(--fg)">2/3 都是沒肺炎的片子</b>。<br><br>這代表「該不該出框」的決定，比「框畫得準不準」更重要。</p>
+    </div>
+    <div class="card" style="border-color:var(--accent)">
+      <h4><span class="tag">陷阱三</span></h4>
+      <p><b style="color:var(--fg)">IoU 最高只要求 0.75。</b><br><br>比一般物件偵測（要求到 0.95）寬鬆很多。<br><br>代表「框得大概對」就有分，不用追求完美貼合。力氣要花對地方。</p>
+    </div>
+  </div>
+
+  <div class="callout warn">
+    <p><strong>分數大概長怎樣？當年第一名也只有 0.25。</strong></p>
+    <p style="margin-bottom:0">所以我們做出 0.15 是很正常也很合理的成績。<b>不要被低分數嚇到，也不要以為自己做錯了。</b>這題本身就很難 —— 連醫師都會看錯。報告的重點是分析和方法論，不是分數高低。</p>
+  </div>
+</section>
+
+<section id="how">
+  <p class="eyebrow">04 — 實作</p>
+  <h2>五個步驟</h2>
+  <p>這是簡報第 4 頁的主體。每一步我都寫了「在做什麼」和「為什麼要這樣做」。</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="n">01</div>
+      <div>
+        <h4>拿資料</h4>
+        <p>去 Kaggle 下載，3.7 GB。</p>
+        <div class="why"><b>注意：</b>要先在競賽頁按「I Understand and Accept」接受規則，不然下載會直接被擋。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">02</div>
+      <div>
+        <h4>把 DICOM 轉成 PNG</h4>
+        <p>順便把 1024×1024 縮成 640×640。</p>
+        <div class="why"><b>為什麼？</b>因為幾乎所有現成的深度學習工具都吃 PNG／JPG，不吃 DICOM。不縮小的話顯卡記憶體會爆，而且訓練超慢。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">03</div>
+      <div>
+        <h4>把標註轉成 YOLO 格式</h4>
+        <p>CSV 給的是「左上角 ＋ 像素」，YOLO 要的是「中心點 ＋ 0~1 的比例」，所以要做個換算。</p>
+        <div class="why"><b>最容易漏的一步：</b>沒肺炎的片子也要產生一個<b>空白的標註檔</b>，這樣模型才知道「這張是反例，什麼都不要框」。漏掉的話模型會學歪，看到什麼都想框。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">04</div>
+      <div>
+        <h4>訓練模型</h4>
+        <p>用 <b>YOLOv8</b>，一行指令就開始訓練，它會自己做資料增強、自己算分數。</p>
+        <div class="why"><b>為什麼不自己刻？</b>我們的重點是「把題目做對」，不是重造輪子。用現成的，一個晚上就能跑出第一個結果，簡報第 4 頁馬上有數字。之後想換 Faster R-CNN 做對照實驗也很容易，前面的資料處理可以共用。</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="n">05</div>
+      <div>
+        <h4>調門檻 ＋ 產生答案檔</h4>
+        <p>模型會輸出一堆框和信心值。我們要決定：<b>信心低於多少就丟掉？</b></p>
+        <p class="muted" style="font-size:14px">門檻太低 → 一堆沒肺炎的片子被亂框（陷阱二，大扣分）<br>門檻太高 → 真的有肺炎的漏掉（陷阱一，也扣分）</p>
+        <div class="why"><b>做法：</b>在驗證集上掃一遍，畫出「門檻 vs 分數」的曲線找最高點。這張曲線圖放進簡報會很好看，也是我們真的有在針對這題調校的證據。最後把座標<b>乘回 1024 尺度</b>（因為是用 640 訓練的），寫成 CSV 交上去。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="week12">
+  <p class="eyebrow">05 — 繳交</p>
+  <h2>Week 12 這五頁，誰做什麼</h2>
+  <p>建議一人一頁，最後一個人負責合併、統一字體顏色、順過一遍。<b>名字現在就填進去，不要等。</b></p>
+
+  <div class="tscroll">
+    <table>
+      <tr><th>頁</th><th>內容</th><th>具體要放什麼</th><th>負責人</th></tr>
+      <tr><td class="num">P1</td><td>介紹競賽任務</td><td>醫學背景 3 句話 ＋「這是偵測不是分類」的對照表 ＋ 評分三陷阱</td><td><span class="owner">&nbsp;</span></td></tr>
+      <tr><td class="num">P2</td><td>資料的長相</td><td>檔案清單 ＋ CSV 截圖 ＋ <b>一張畫了紅框的 X 光範例圖</b>（最重要）</td><td><span class="owner">&nbsp;</span></td></tr>
+      <tr><td class="num">P3</td><td>簡單的資料分析</td><td>類別分布長條圖、框大小的箱型圖／直方圖、相關性熱力圖，<b>每張圖配一句結論</b></td><td><span class="owner">&nbsp;</span></td></tr>
+      <tr><td class="num">P4</td><td>預期的實作方法</td><td>上面那五步驟流程圖 ＋ 為什麼選 YOLO ＋ 初步結果（有的話）</td><td><span class="owner">&nbsp;</span></td></tr>
+      <tr><td class="num">P5</td><td>分工模式</td><td>這張表 ＋ 時程</td><td><span class="owner">&nbsp;</span></td></tr>
+    </table>
+  </div>
+
+  <div class="callout">
+    <p><strong>兩個會被扣分的地方</strong></p>
+    <p><b>1. 參考 Kaggle Code 一定要附來源 URL。</b>老師投影片上用紅字強調了兩次（第 3 頁和第 4 頁各一次）。請在那兩頁的頁尾加一行小字：<code>參考來源：https://www.kaggle.com/code/...</code></p>
+    <p style="margin-bottom:0"><b>2. 第 4 頁「有初步實驗結果佳」。</b>哪怕只是跑 10 個 epoch 得到 mAP = 0.08，也比完全沒數字好很多。最低限度：一張訓練曲線 ＋ 一張預測結果圖 ＋ 一個分數。</p>
+  </div>
+</section>
+
+<section id="todo">
+  <p class="eyebrow">06 — 行動</p>
+  <h2>這禮拜每個人回去做什麼</h2>
+  <p>不用全部的人都跑程式，但<b>至少每個人要看懂這一頁</b>。</p>
+
+  <div class="tscroll">
+    <table>
+      <tr><th>誰</th><th>做什麼</th><th>大概要多久</th></tr>
+      <tr><td><b>全員</b></td><td>讀完這一頁</td><td class="num">15 分鐘</td></tr>
+      <tr><td><b>全員</b></td><td>去 Kaggle 註冊帳號 ＋ 接受競賽規則</td><td class="num">5 分鐘</td></tr>
+      <tr><td><b>全員</b></td><td>認領一頁簡報，把名字填進去</td><td class="num">1 分鐘</td></tr>
+      <tr><td>負責 <b>P2、P3</b></td><td>裝環境、下載資料、跑 EDA 出圖</td><td class="num">1~2 小時</td></tr>
+      <tr><td>負責 <b>P4</b></td><td>跑一次 baseline 訓練，拿到一個分數</td><td class="num">2~3 小時</td></tr>
+      <tr><td>負責 <b>P1、P5</b></td><td>把技術文件消化成投影片語言</td><td class="num">1 小時</td></tr>
+    </table>
+  </div>
+
+  <p class="muted" style="font-size:14.5px">環境和程式<b>已經架好了</b>，不用從零開始。跑不起來就看專案裡的 <code>docs/01_環境建置.md</code>，裡面有七個常見錯誤的解法。</p>
+
+  <h3>下次開會前要確認的事</h3>
+  <ul class="check">
+    <li>五頁都有人認領，名字填好了</li>
+    <li>每個人都有 Kaggle 帳號，而且<b>接受了競賽規則</b></li>
+    <li>至少一個人把資料下載完、EDA 的圖跑出來了</li>
+    <li>簡報用哪個模板、誰負責最後合併，講好了</li>
+  </ul>
+</section>
+
+<section id="qa">
+  <p class="eyebrow">07 — 疑難</p>
+  <h2>你可能會想問的</h2>
+
+  <details><summary>我不太會深度學習，可以做嗎？</summary>
+    <p>可以。P1、P2、P5 完全不需要碰模型，只要看得懂資料和規則。P3 只需要跑一行指令出圖，然後解讀圖。真正要動模型的只有 P4 一個人。</p></details>
+  <details><summary>我們要自己刻 YOLO 嗎？</summary>
+    <p>不用。用現成的 ultralytics 套件。我們的價值在「針對這題的分析和調校」—— 特別是信心門檻那段，那才是這題的真功夫。</p></details>
+  <details><summary>我電腦沒有獨顯／空間不夠怎麼辦？</summary>
+    <p>用 Kaggle Notebook，每週有 30 小時免費 GPU，而且資料已經掛在上面不用下載。或者 Google Colab 也行。</p></details>
+  <details><summary>分數很低是不是我們做錯了？</summary>
+    <p>不是。第一名 0.25，我們做到 0.15 就很好了。報告的重點是分析和方法論，不是分數高低。</p></details>
+  <details><summary>為什麼不用更新的 YOLO 版本？</summary>
+    <p>可以用，ultralytics 套件裡新舊版本都有，換個模型名稱就好。但先用穩的把流程跑通 —— 有結果比有最新技術重要。</p></details>
+  <details><summary>期末最後要交什麼？</summary>
+    <p>那是後面幾週的事。Week 12 就只要這 5 頁。一次處理一件事。</p></details>
+</section>
+
+<footer>
+  <p style="margin-bottom:8px"><b>競賽頁面</b>　<a href="https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge">kaggle.com/competitions/rsna-pneumonia-detection-challenge</a></p>
+  <p style="margin-bottom:0">專案裡的其他文件（要動手時再看）：<code>README.md</code> 完整技術文件 ／ <code>docs/01_環境建置.md</code> 裝環境與排錯 ／ <code>docs/02_分工與時程.md</code> 詳細分工表</p>
+</footer>
+
+</div>

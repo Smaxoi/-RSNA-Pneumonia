@@ -1,0 +1,20 @@
+# RSNA Pneumonia Detection — conda 環境定義
+#
+# 建立方式：
+#   conda env create -f environment.yml
+#   conda activate rsna
+#   # PyTorch (CUDA) 與其餘套件由 setup_env.ps1 用 pip 安裝，
+#   # 因為 CUDA 版的 torch 必須從 PyTorch 官方 index 下載。
+#
+# 刪掉重建：
+#   conda env remove -n rsna
+
+name: rsna
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.11
+  - pip
+  - libjpeg-turbo      # DICOM / 影像解碼

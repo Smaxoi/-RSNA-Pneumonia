@@ -1,0 +1,36 @@
+# 資料（太大，不進 git）
+data/raw/
+data/processed/
+*.dcm
+*.zip
+
+# 模型權重
+models/
+runs/
+*.pt
+*.pth
+*.onnx
+yolo*.pt
+
+# 輸出
+reports/figures/*.png
+reports/*.txt
+submission*.csv
+
+# Python
+__pycache__/
+*.py[cod]
+.ipynb_checkpoints/
+.venv/
+*.egg-info/
+
+# Kaggle 憑證（千萬不要上傳！）
+kaggle.json
+access_token
+.kaggle/
+
+# 編輯器 / 系統
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
