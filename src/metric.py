@@ -25,7 +25,12 @@ from typing import Iterable, Sequence
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from config import IOU_THRESHOLDS  # noqa: E402
+try:
+    from config import IOU_THRESHOLDS  # noqa: E402
+except ImportError:
+    # 單獨下載這一支檔案時（例如 Kaggle Notebook）沒有 config.py，
+    # 用官方門檻當後備值。這兩份數值必須永遠一致。
+    IOU_THRESHOLDS = [0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75]
 
 Box = Sequence[float]
 

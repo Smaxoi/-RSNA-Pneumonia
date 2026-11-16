@@ -9,6 +9,7 @@
 | **第一次接觸這個專題的組員** | 👉 **[docs/00_專題講解.md](docs/00_專題講解.md)** ← 白話版，15 分鐘看完 |
 | 要動手裝環境、跑程式 | [docs/01_環境建置.md](docs/01_環境建置.md) |
 | 想知道誰負責什麼、時程 | [docs/02_分工與時程.md](docs/02_分工與時程.md) |
+| **要跑 Round 0 共用 baseline** | 👉 **[notebooks/round0_kaggle_baseline.ipynb](notebooks/round0_kaggle_baseline.ipynb)** ← 匯入 Kaggle 直接跑，不用裝環境 |
 | 要查技術細節（本文件） | 繼續往下看 ↓ |
 
 ⚠️ **Week 12 只要交 5 頁簡報**，不用把整個專題做完。細節看 `00_專題講解.md`。
@@ -275,8 +276,9 @@ DICOM (1024×1024)
 ├── setup_env.ps1              ← 一鍵建環境腳本（Windows）
 ├── .gitignore
 ├── docs/
+│   ├── 00_專題講解.md          ← 給組員的白話版導讀（先看這份）
 │   ├── 01_環境建置.md          ← 環境安裝詳細步驟 + 常見錯誤
-│   └── 02_分工與時程.md        ← 分工表、週進度、簡報分頁負責人
+│   └── 02_分工與時程.md        ← 五人分工、兩輪制、回報格式、時程
 ├── data/
 │   ├── raw/                   ← Kaggle 原始資料（不進 git）
 │   ├── processed/             ← 轉好的 PNG + YOLO 標註（不進 git）
@@ -288,7 +290,8 @@ DICOM (1024×1024)
 │   ├── eda.py                 ← 第 4 節的所有分析，一次產出所有圖
 │   ├── prepare_data.py        ← DICOM → PNG + YOLO 標註 + train/val 切分
 │   └── metric.py              ← 競賽官方 metric 的本地實作
-├── notebooks/                 ← 探索用的 Jupyter notebook
+├── notebooks/
+│   └── round0_kaggle_baseline.ipynb  ← 五人共用 baseline，匯入 Kaggle 直接跑
 ├── models/                    ← 訓練好的權重（不進 git）
 └── reports/
     └── figures/               ← EDA 圖表輸出，簡報直接拿這裡的圖
@@ -296,7 +299,23 @@ DICOM (1024×1024)
 
 ---
 
-## 7. 新組員三步上手
+## 7. 新組員上手
+
+### 路線 A：Kaggle Notebook（推薦，不用裝任何東西）
+
+Week 12 的 Round 0 全員走這條。不用裝 CUDA、不用下載 3.7 GB 資料。
+
+1. 到競賽頁按 **Join Competition** 接受規則
+2. Kaggle 首頁 → Create → Notebook → File → **Import Notebook**，
+   上傳 [`notebooks/round0_kaggle_baseline.ipynb`](notebooks/round0_kaggle_baseline.ipynb)
+3. 右側 Settings：**Accelerator** 選 GPU、**Internet** 開啟、
+   **Input** 掛上 `rsna-pneumonia-detection-challenge`
+4. 只改第一個格子的 `MY_NAME`，**Run All**，約 40~60 分鐘
+5. 把最後印出的回報行貼到群組
+
+為什麼五個人都要跑同一份 → 看 [docs/02_分工與時程.md](docs/02_分工與時程.md) 第 2 節。
+
+### 路線 B：自己電腦（Round 1 想調參再用）
 
 ```bash
 # ① 建立環境（第一次才要，約 10 分鐘）
