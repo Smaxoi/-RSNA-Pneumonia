@@ -10,6 +10,7 @@
 | 要動手裝環境、跑程式 | [docs/01_環境建置.md](docs/01_環境建置.md) |
 | 想知道誰負責什麼、時程 | [docs/02_分工與時程.md](docs/02_分工與時程.md) |
 | **已經認領了變因，想知道自己要做什麼** | 👉 **[docs/03_任務卡.md](docs/03_任務卡.md)** ← 五張卡，只讀自己那張 |
+| **要整理初步實驗結果（簡報 P4）** | 👉 **[docs/04_P4比較表.md](docs/04_P4比較表.md)** ← 回報行丟進去就產出表格 |
 | **要跑 Round 0 共用 baseline** | 👉 **[notebooks/round0_kaggle_baseline.ipynb](notebooks/round0_kaggle_baseline.ipynb)** ← 匯入 Kaggle 直接跑，不用裝環境 |
 | 要查技術細節（本文件） | 繼續往下看 ↓ |
 
@@ -280,7 +281,8 @@ DICOM (1024×1024)
 │   ├── 00_專題講解.md          ← 給組員的白話版導讀（先看這份）
 │   ├── 01_環境建置.md          ← 環境安裝詳細步驟 + 常見錯誤
 │   ├── 02_分工與時程.md        ← 五人分工、兩輪制、回報格式、時程
-│   └── 03_任務卡.md            ← 五張任務卡，每人一張，寫到可以照著做
+│   ├── 03_任務卡.md            ← 五張任務卡，每人一張，寫到可以照著做
+│   └── 04_P4比較表.md          ← 初步實驗結果彙總，簡報 P4 直接用
 ├── data/
 │   ├── raw/                   ← Kaggle 原始資料（不進 git）
 │   ├── processed/             ← 轉好的 PNG + YOLO 標註（不進 git）
@@ -291,7 +293,8 @@ DICOM (1024×1024)
 │   ├── download_data.py       ← 用 Kaggle API 下載並解壓資料
 │   ├── eda.py                 ← 第 4 節的所有分析，一次產出所有圖
 │   ├── prepare_data.py        ← DICOM → PNG + YOLO 標註 + train/val 切分
-│   └── metric.py              ← 競賽官方 metric 的本地實作
+│   ├── metric.py              ← 競賽官方 metric 的本地實作
+│   └── collect_reports.py     ← 把群組的回報行整理成 P4 的比較表
 ├── notebooks/
 │   └── round0_kaggle_baseline.ipynb  ← 五人共用 baseline，匯入 Kaggle 直接跑
 ├── models/                    ← 訓練好的權重（不進 git）
@@ -358,7 +361,7 @@ python src/eda.py
 | 1 | 介紹競賽任務 | §1 + §3（評分） | 待填 |
 | 2 | 舉例說明資料的長相 | §2（含 DICOM 範例圖） | 待填 |
 | 3 | 簡單的資料分析（含來源） | §4 + `reports/figures/` | 待填 |
-| 4 | 預期的實作方法 + 初步實驗結果（含來源） | §5 | 待填 |
+| 4 | 預期的實作方法 + 初步實驗結果（含來源） | §5 + `docs/04_P4比較表.md` | 待填 |
 | 5 | 分工模式 | `docs/02_分工與時程.md` | 待填 |
 
 ✅ 兩個不能忘的扣分點：
