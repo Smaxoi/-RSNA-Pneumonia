@@ -137,7 +137,7 @@ https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge/data
 | 內容 | 從哪來 |
 |---|---|
 | 門檻掃描曲線圖 | Notebook 第 7 節會畫，施柏丞手上有 |
-| 目前最佳 mAP ≈ **0.186** | 施柏丞的 Round 0 |
+| 目前最佳 mAP = **0.1862** | 彭明山後算（conf=0.05、shrink=1.0） |
 | 分數尺度對照表 | 見下 |
 | 一張預測範例圖 | Round 0 權重跑一次推論 |
 
@@ -146,7 +146,7 @@ https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge/data
 | 對照 | mAP |
 |---|---|
 | 全部不畫框 | 0.000 |
-| **我們現在**（10 epoch、yolov8n、8000 張） | **~0.186** |
+| **我們現在**（10 epoch、yolov8n、8000 張） | **0.1862** |
 | 競賽第一名 | 約 0.25 |
 
 > 「0.186 聽起來低，但它已經到第一名的四分之三，
@@ -160,8 +160,9 @@ https://www.kaggle.com/competitions/rsna-pneumonia-detection-challenge/data
 
 把踩過的坑講出來是加分的，它證明我們真的跑過而不是只讀過。
 
-> ⚠️ 0.186 是**從曲線圖目視讀出來的**，誤差約 ±0.005，而且只有一個人的結果。
-> 等正式回報行進來再換成精確值。
+> ⚠️ 這個數字是**彭明山事後重新計分**算出來的，不是誰的回報行原值 ——
+> 五個人當時回報的都是 `mAP=0.0000`（門檻 0.35 高過模型最高信心 0.187）。
+> 數字本身是精確的，但講的時候要說清楚它是重算來的。
 
 ---
 

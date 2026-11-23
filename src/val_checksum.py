@@ -25,7 +25,10 @@ python src/val_checksum.py --selftest
 import hashlib
 import sys
 
-DIGITS = 12  # 取 md5 前 12 碼
+DIGITS = 12   # 取 md5 前 12 碼
+SEP = "|"     # 分隔符。**必須和 notebooks/round0_kaggle_baseline.ipynb
+              # 第 5 格一致**，那裡寫的是 "|".join(val_sorted)。
+              # 用別的字元會得到完全不同的 12 碼。
 
 
 def val_checksum(patient_ids) -> str:
@@ -34,12 +37,14 @@ def val_checksum(patient_ids) -> str:
     規則全部釘死，不留任何解釋空間：
       1. 去重（同一個 patientId 只算一次）
       2. 以字串升冪排序 —— 所以呼叫者傳進來的順序不影響結果
-      3. 用 "\n" 串起來，不加結尾換行
+      3. 用 SEP（"|"）串起來，不加結尾分隔符
       4. utf-8 編碼後取 md5，取前 12 個十六進位字元
+
+    這四步跟 notebooks/round0_kaggle_baseline.ipynb 第 5 格逐字對應。
+    兩邊必須永遠一致，否則同一份 val split 會算出兩個不同的 checksum。
     """
     uniq = sorted({str(p).strip() for p in patient_ids if str(p).strip()})
-    blob = "\n".join(uniq).encode("utf-8")
-    return hashlib.md5(blob).hexdigest()[:DIGITS]
+    return hashlib.md5(SEP.join(uniq).encode("utf-8")).hexdigest()[:DIGITS]
 
 
 def _selftest() -> int:

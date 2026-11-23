@@ -125,15 +125,15 @@ def make_split(labels: pd.DataFrame, classes: pd.DataFrame) -> pd.DataFrame:
         .reset_index()
     )
     cls = classes.drop_duplicates("patientId")[["patientId", "class"]]
-    per_image = per_image.merge(cls, on="patientId", how="left")
+    per_image = (per_image.merge(cls, on="patientId", how="left")
+                 .sort_values("patientId")       # 明確排序，確保決定性
+                 .reset_index(drop=True))
 
     # 先抽樣，再切 train/val —— 順序不能反，不然 val 的內容會不一樣。
     #
-    # ⚠️ 這是 **repo 這邊的實作**。Round 0 的 2f22fdec3b1c 是 Kaggle notebook
-    #    第 2 格跑出來的，那格程式不在版控裡，抽樣方式未必和這裡相同。
-    #    第一次跑 `python src/val_checksum.py --from-split` 時要核對：
-    #    對得上就沿用 2f22fdec3b1c，對不上就以這裡為準並更新 docs/02，
-    #    兩個值不能同時存在。
+    # 這一段跟 notebooks/round0_kaggle_baseline.ipynb 第 5 格逐行對應，
+    # 包含抽樣之後要再排序一次 —— train_test_split 的結果和列的順序有關，
+    # 少了那次排序就會切出不同的 val，checksum 也就對不起來。
     subset = getattr(config, "SUBSET_PATIENTS", None)
     if subset and subset < len(per_image):
         per_image, _ = train_test_split(
@@ -142,7 +142,7 @@ def make_split(labels: pd.DataFrame, classes: pd.DataFrame) -> pd.DataFrame:
             random_state=config.RANDOM_SEED,
             stratify=per_image["class"],   # 抽樣後三類比例維持不變
         )
-        per_image = per_image.reset_index(drop=True)
+        per_image = per_image.sort_values("patientId").reset_index(drop=True)
 
     train_ids, val_ids = train_test_split(
         per_image["patientId"],
