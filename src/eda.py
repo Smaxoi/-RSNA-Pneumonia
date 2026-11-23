@@ -322,7 +322,10 @@ def fig_class_distribution(per_image: pd.DataFrame) -> None:
     for i, (k, v) in enumerate(box_counts.items()):
         axes[2].text(i, v * 1.1, f"{v:,}", ha="center", fontsize=9)
 
-    fig.suptitle("圖 1 ─ 類別分布（資料不平衡：約 2/3 影像沒有框）",
+    # 標題上的數字直接從資料算，不要寫死 —— 寫死的「約 2/3」其實是 77.5%，
+    # 而這張圖會被貼進簡報，上面的數字錯了就是錯在台上。
+    _no_box_pct = (per_image["Target"] == 0).mean() * 100
+    fig.suptitle(f"圖 1 ─ 類別分布（資料不平衡：{_no_box_pct:.1f}% 的影像沒有框）",
                  fontsize=15, fontweight="bold")
     fig.tight_layout()
     _save(fig, "01_class_distribution.png")

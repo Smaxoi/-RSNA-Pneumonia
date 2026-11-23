@@ -17,6 +17,11 @@ reports/figures/*.png
 reports/*.txt
 submission*.csv
 
+# 但 Week 12 簡報要用的這幾份要進 git：五個人都要拿得到同一份圖，
+# 而且簡報上的數字必須對得上這份摘要。總共約 2.3 MB。
+!reports/figures/0[1-6]_*.png
+!reports/eda_summary.txt
+
 # Python
 __pycache__/
 *.py[cod]
