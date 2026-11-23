@@ -79,13 +79,16 @@ def _from_split() -> int:
     print("用到的參數（任何一個不同，checksum 就會不同）：")
     print(f"  RANDOM_SEED     = {config.RANDOM_SEED}")
     print(f"  VAL_RATIO       = {config.VAL_RATIO}")
-    print(f"  SUBSET_PATIENTS = (config.py 裡沒有這個常數)")
-    print(f"  影像總數        = {len(per_image)}")
-    print(f"\nn_val = {len(val_ids)}")
+    print(f"  SUBSET_PATIENTS = {getattr(config, 'SUBSET_PATIENTS', None)}")
+    print(f"  抽樣後影像數    = {len(per_image)}")
+    print()
+    print(f"n_val = {len(val_ids)}")
     print(f"val checksum = {val_checksum(val_ids)}")
-    print("\n⚠️  這是「不做抽樣、用全部影像」的切分。")
-    print("    Round 0 規定 SUBSET_PATIENTS=8000，那一步在 Kaggle notebook 第 2 格，")
-    print("    不在這個 repo 裡 —— 所以上面這個值不等於 Round 0 的 2f22fdec3b1c。")
+    print()
+    print("⚠️  拿這個值跟 docs/02 記的 2f22fdec3b1c 核對：")
+    print("    一樣   -> 基準確立，repo 終於可以重現這個值。")
+    print("    不一樣 -> notebook 第 2 格的抽樣方式跟這裡不同。")
+    print("    二選一當基準並更新 docs/02，不要讓兩個值同時存在。")
     return 0
 
 

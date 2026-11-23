@@ -127,6 +127,23 @@ def make_split(labels: pd.DataFrame, classes: pd.DataFrame) -> pd.DataFrame:
     cls = classes.drop_duplicates("patientId")[["patientId", "class"]]
     per_image = per_image.merge(cls, on="patientId", how="left")
 
+    # 先抽樣，再切 train/val —— 順序不能反，不然 val 的內容會不一樣。
+    #
+    # ⚠️ 這是 **repo 這邊的實作**。Round 0 的 2f22fdec3b1c 是 Kaggle notebook
+    #    第 2 格跑出來的，那格程式不在版控裡，抽樣方式未必和這裡相同。
+    #    第一次跑 `python src/val_checksum.py --from-split` 時要核對：
+    #    對得上就沿用 2f22fdec3b1c，對不上就以這裡為準並更新 docs/02，
+    #    兩個值不能同時存在。
+    subset = getattr(config, "SUBSET_PATIENTS", None)
+    if subset and subset < len(per_image):
+        per_image, _ = train_test_split(
+            per_image,
+            train_size=subset,
+            random_state=config.RANDOM_SEED,
+            stratify=per_image["class"],   # 抽樣後三類比例維持不變
+        )
+        per_image = per_image.reset_index(drop=True)
+
     train_ids, val_ids = train_test_split(
         per_image["patientId"],
         test_size=config.VAL_RATIO,

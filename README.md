@@ -260,7 +260,7 @@ DICOM (1024×1024)
 
 ### 5.4 針對本題評分機制的專屬技巧
 
-1. **信心門檻掃描**（最重要）：訓練完後，用 `src/metric.py` 在驗證集上掃 `conf` 從 0.05 到 0.95，畫出 mAP 曲線找最佳點。通常最佳門檻落在 **0.3~0.5**，比預設的 0.25 高。
+1. **信心門檻掃描**（最重要）：訓練完後，用 `src/metric.py` 在驗證集上掃 `conf` 從 0.05 到 0.95，畫出 mAP 曲線找最佳點。⚠️ **不要沿用「最佳門檻通常落在 0.3~0.5」這種社群經驗值** —— 我們 Round 0 的模型最高信心只有 **0.187**，門檻訂 0.35 等於把所有框濾光，五個人全部拿到 mAP = 0.0000。**先看模型的 maxconf，再決定掃描範圍**；實測最佳點在 conf≈0.05。
 2. **框稍微縮小**：社群普遍發現把預測框乘上 **0.85~0.90** 的縮放係數能提升分數（標註框普遍偏大）。
 3. **把 `No Lung Opacity / Not Normal` 當成 hard negative** 特別加權，減少誤報。
 4. **不要過度追求框的精準度**，IoU 門檻只到 0.75。
@@ -300,7 +300,8 @@ DICOM (1024×1024)
 │   ├── eda.py                 ← 第 4 節的所有分析，一次產出所有圖
 │   ├── prepare_data.py        ← DICOM → PNG + YOLO 標註 + train/val 切分
 │   ├── metric.py              ← 競賽官方 metric 的本地實作
-│   └── collect_reports.py     ← 把群組的回報行整理成 P4 的比較表
+│   ├── collect_reports.py     ← 把群組的回報行整理成 P4 的比較表
+│   └── val_checksum.py        ← val split 的 checksum，算法只有這一份實作
 ├── notebooks/
 │   └── round0_kaggle_baseline.ipynb  ← 五人共用 baseline，匯入 Kaggle 直接跑
 ├── models/                    ← 訓練好的權重（不進 git）
