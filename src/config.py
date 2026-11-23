@@ -69,9 +69,23 @@ BOX_SHRINK = 0.90       # 預測框縮放係數，社群經驗值 0.85~0.90
 
 
 def ensure_dirs() -> None:
-    """建立所有輸出資料夾（已存在就略過）。"""
+    """建立所有輸出資料夾（已存在就略過）。
+
+    在 Kaggle 上 RAW_DIR 會被指到 /kaggle/input/...，那是**唯讀**掛載點。
+    對一個唯讀檔案系統上的既有資料夾呼叫 mkdir，作業系統回的是
+    OSError(errno 30, Read-only file system)，而不是 FileExistsError ——
+    所以 exist_ok=True 擋不住，會直接讓整支程式掛掉。
+    既然資料夾已經在那裡了，本來就不需要建立：先檢查存在，再試著建。
+    """
     for d in (RAW_DIR, PROCESSED_DIR, REPORTS_DIR, FIGURES_DIR, MODELS_DIR):
-        d.mkdir(parents=True, exist_ok=True)
+        if d.exists():
+            continue
+        try:
+            d.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            # 建不起來的是輸入資料夾就無所謂；真正要寫檔的地方建不起來，
+            # 後面存圖時自然會報錯，不用在這裡提前中斷。
+            print(f"[config] 無法建立 {d}（{exc.strerror}），略過。")
 
 
 if __name__ == "__main__":
