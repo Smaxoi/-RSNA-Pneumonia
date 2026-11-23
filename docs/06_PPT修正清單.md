@@ -129,6 +129,38 @@ GUID 只留前 8 碼加刪節號、`NaN` 換成「—」、右邊多加一欄說
 > 💡 可選的加分句：PA/AP 胸片是面對觀眾的，所以**影像左側其實是病人的右肺**。
 > 講得出這句代表看懂了影像；但沒把握就別提，被追問會很尷尬。
 
+#### `class` 怎麼接上去（這裡有個坑）
+
+`stage_2_detailed_class_info.csv` 也是 **30,227 列、同樣的列序**，
+意思是同一個 `patientId` 的 class 會**跟著框一起重複**：
+
+| patientId | class |
+|---|---|
+| `0004cfab…` | `Normal` 或 `No Lung Opacity / Not Normal` |
+| `00436515…` | `Lung Opacity` |
+| `00436515…` | `Lung Opacity` ← 重複出現 |
+
+**所以不能直接 `merge(on="patientId")`** —— 兩邊各 2 列會變成 2×2 = 4 列，
+框數憑空多一倍。`src/eda.py` 的做法是先去重再接：
+
+```python
+cls = classes.drop_duplicates(subset="patientId")[["patientId", "class"]]
+per_image = per_image.merge(cls, on="patientId", how="left")
+```
+
+而且 `class` 跟 `Target` 不是兩份獨立的資訊：
+
+> **`Target = 1` ⟺ `class == "Lung Opacity"`**，永遠成立。
+> 驗算：`Lung Opacity` 有 6,012 張，而有框的影像 = 26,684 − 20,672 = **6,012 張**，完全吻合。
+
+→ 所以這個檔案真正的用途是處理 `Target = 0`：它把「沒有框」那 20,672 張
+拆成 `Normal`（8,851）和 `No Lung Opacity / Not Normal`（11,821）兩類。
+
+這就是第 4 頁最值得講的一句：
+
+> **class 的作用不是標示肺炎（那 `Target` 就夠了），
+> 而是告訴我們沒有框的影像裡有一大半「有病但不是肺炎」—— 那才是誤判的來源。**
+
 ### 4-2　類別名稱
 
 `Not Normal` 的官方全名是 **`No Lung Opacity / Not Normal`**。
