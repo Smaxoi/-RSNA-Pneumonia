@@ -96,8 +96,13 @@ def round0_table(rows):
             "、".join(sorted(sums))))
         print("  有人改了 SEED 或 SUBSET_PATIENTS，先修好再重跑。")
     elif len(sums) == 1:
-        print("- ✅ checksum 全部一致（`{}`）—— 五個人用的是同一份 val split。".format(
-            sums.pop()))
+        # 只報「已回報的這幾個人」，不要講成五個人都對上了 ——
+        # 沒回報的人可能正拿著不同的 split，說成全員一致會掩蓋這件事。
+        n = sum(1 for r in rows if r["checksum"])
+        print("- ✅ checksum 一致（`{}`）—— 已回報的 {} 人用的是同一份 val split。".format(
+            sums.pop(), n))
+        if n < 5:
+            print("  還有 {} 人沒回報，**還不能說全員對齊**。".format(5 - n))
 
     vals = [score(r)[0] for r in rows]
     kinds = {score(r)[1] for r in rows}

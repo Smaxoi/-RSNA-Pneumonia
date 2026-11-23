@@ -22,6 +22,10 @@ submission*.csv
 !reports/figures/0[1-6]_*.png
 !reports/eda_summary.txt
 
+# 五個人的 Round 0 回報行也要進 git——一致性檢查的原始證據，
+# 只留在群組聊天裡的話，過兩週就翻不到了。
+!reports/回報行.txt
+
 # Python
 __pycache__/
 *.py[cod]

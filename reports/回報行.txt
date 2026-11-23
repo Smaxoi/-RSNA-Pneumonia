@@ -1,0 +1,5 @@
+# 群組回報行。一行一筆，中間夾雜別的聊天內容沒關係。
+# 用法：python src/collect_reports.py reports/回報行.txt
+
+[林明和] round0 yolov8n imgsz=512 ep=10 seed=42 conf=0.35 shrink=1.0 -> val mAP=0.0000  checksum=2f22fdec3b1c
+[施柏丞] round0 yolov8n imgsz=512 ep=10 seed=42 conf=0.35 shrink=1.0 -> val mAP=0.0000  checksum=2f22fdec3b1c
