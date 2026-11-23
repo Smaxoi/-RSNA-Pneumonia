@@ -36,14 +36,53 @@ from tqdm import tqdm  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config  # noqa: E402
 
-# 中文字型（Windows 用微軟正黑體；找不到會自動往後退）
-plt.rcParams["font.sans-serif"] = [
-    "Microsoft JhengHei", "Microsoft YaHei", "PingFang TC",
-    "Noto Sans CJK TC", "SimHei", "DejaVu Sans",
-]
+def _pick_cjk_font():
+    """挑一個這台機器上真的裝了的中文字型。
+
+    為什麼不能只寫一串字型名字：matplotlib 找不到字型時不會報錯，
+    它會默默換成 DejaVu Sans，於是圖上每個中文都變成方塊 □□□，
+    圖就不能放進簡報了。Kaggle / Colab 這類 Linux 環境預設沒有任何
+    中文字型，所以一定要先確認再畫。
+    """
+    import matplotlib.font_manager as fm
+
+    preferred = [
+        "Microsoft JhengHei", "Microsoft YaHei", "PingFang TC",   # Windows / macOS
+        "Noto Sans CJK TC", "Noto Sans CJK JP", "Noto Sans CJK SC",  # fonts-noto-cjk
+        "Noto Sans TC", "Source Han Sans TW", "WenQuanYi Zen Hei", "SimHei",
+    ]
+    installed = {f.name for f in fm.fontManager.ttflist}
+
+    if not installed & set(preferred):
+        # 可能是這個 session 剛剛才 apt install 字型，matplotlib 的快取還是舊的
+        try:
+            fm.fontManager = fm._load_fontmanager(try_read_cache=False)
+            installed = {f.name for f in fm.fontManager.ttflist}
+        except Exception:
+            pass
+
+    for name in preferred:
+        if name in installed:
+            return name
+    # 清單裡都沒有，退一步找任何看起來像中日韓字型的
+    for name in sorted(installed):
+        if any(k in name for k in ("CJK", "Han", "Hei", "Ming", "Song", "Gothic")):
+            return name
+    return None
+
+
+_CJK_FONT = _pick_cjk_font()
+plt.rcParams["font.sans-serif"] = ([_CJK_FONT] if _CJK_FONT else []) + ["DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 110
 sns.set_theme(style="whitegrid", rc={"font.sans-serif": plt.rcParams["font.sans-serif"]})
+
+if _CJK_FONT:
+    print(f"[eda] 圖表中文字型：{_CJK_FONT}")
+else:
+    print("[eda] ⚠️ 這台機器沒有中文字型，圖上的中文會變成方塊 □□□，不能放進簡報。")
+    print("[eda]    Kaggle / Colab / Linux 請先跑這一行，然後重跑這一格：")
+    print("[eda]    !apt-get -qq install -y fonts-noto-cjk")
 
 PALETTE = ["#4C72B0", "#DD8452", "#55A868", "#C44E52"]
 
