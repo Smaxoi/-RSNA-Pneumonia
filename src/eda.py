@@ -36,6 +36,50 @@ from tqdm import tqdm  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config  # noqa: E402
 
+def _refresh_font_cache() -> int:
+    """把系統上新裝的字型掃進 matplotlib **現有的** fontManager，回傳新增幾個。
+
+    不可以用 `fm.fontManager = fm._load_fontmanager(...)` 換掉整個物件：
+    matplotlib 在模組載入時就執行了 `findfont = fontManager.findfont`，
+    這個模組層級的名字繫結指向**當時那個實例**。換掉 `fm.fontManager`
+    不會換掉 `fm.findfont`，於是會出現最難查的那種狀況 ——
+    偵測階段看得到 Noto、實際畫圖卻還是用 DejaVu Sans，
+    程式不報錯，只在一堆 `Glyph ... missing from font(s) DejaVu Sans`
+    警告裡才看得出來，而圖已經畫成方塊了。
+    所以要直接往現有的物件裡加字型。
+    """
+    import matplotlib.font_manager as fm
+
+    known = {f.fname for f in fm.fontManager.ttflist}
+    added = 0
+    for path in fm.findSystemFonts():   # 副檔名涵蓋 ttf / otf / ttc
+        if path in known:
+            continue
+        try:
+            fm.fontManager.addfont(path)
+            added += 1
+        except Exception:
+            pass   # 壞掉的字型檔跳過就好，不值得讓整支 EDA 停下來
+
+    if added:
+        # 先前查過的結果有快取，不清掉的話還是會拿到「找不到」的舊答案
+        for owner, name in ((fm.FontManager, "_findfont_cached"), (fm, "_get_font")):
+            try:
+                getattr(owner, name).cache_clear()
+            except Exception:
+                pass
+    return added
+
+
+def _resolved_font_file(families) -> str:
+    """matplotlib 實際會用哪個字型檔來畫這些字族。"""
+    import matplotlib.font_manager as fm
+    try:
+        return Path(fm.findfont(fm.FontProperties(family=families))).name
+    except Exception:
+        return "?"
+
+
 def _pick_cjk_font():
     """挑一個這台機器上真的裝了的中文字型。
 
@@ -54,12 +98,9 @@ def _pick_cjk_font():
     installed = {f.name for f in fm.fontManager.ttflist}
 
     if not installed & set(preferred):
-        # 可能是這個 session 剛剛才 apt install 字型，matplotlib 的快取還是舊的
-        try:
-            fm.fontManager = fm._load_fontmanager(try_read_cache=False)
+        # 可能是這個 session 剛剛才 apt install 字型，matplotlib 的清單還是舊的
+        if _refresh_font_cache():
             installed = {f.name for f in fm.fontManager.ttflist}
-        except Exception:
-            pass
 
     for name in preferred:
         if name in installed:
@@ -77,12 +118,24 @@ plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 110
 sns.set_theme(style="whitegrid", rc={"font.sans-serif": plt.rcParams["font.sans-serif"]})
 
-if _CJK_FONT:
-    print(f"[eda] 圖表中文字型：{_CJK_FONT}")
+# 光是「字型名稱找得到」不夠。matplotlib 的 findfont 可能繫結在另一個
+# fontManager 實例上，結果名稱查得到、畫圖時卻換回 DejaVu Sans。
+# 所以要問 matplotlib：你實際會用哪個檔案？
+_FONT_FILE = _resolved_font_file(plt.rcParams["font.sans-serif"])
+_FONT_OK = _CJK_FONT is not None and not _FONT_FILE.startswith("DejaVu")
+
+if _FONT_OK:
+    print(f"[eda] 圖表中文字型：{_CJK_FONT} → {_FONT_FILE}")
 else:
-    print("[eda] ⚠️ 這台機器沒有中文字型，圖上的中文會變成方塊 □□□，不能放進簡報。")
-    print("[eda]    Kaggle / Colab / Linux 請先跑這一行，然後重跑這一格：")
-    print("[eda]    !apt-get -qq install -y fonts-noto-cjk")
+    print("[eda] " + "!" * 62)
+    if _CJK_FONT is None:
+        print("[eda] ⚠️ 這台機器沒有中文字型。")
+    else:
+        print(f"[eda] ⚠️ 字型清單裡找得到 {_CJK_FONT}，但 matplotlib 實際會用 {_FONT_FILE}。")
+    print("[eda]    圖上的中文會變成方塊 □□□，產出來的圖不能放進簡報。")
+    print("[eda]    Kaggle / Colab / Linux：先跑  !apt-get -qq install -y fonts-noto-cjk")
+    print("[eda]    裝完把整格重跑一次就會生效，不需要 Restart Kernel。")
+    print("[eda] " + "!" * 62)
 
 PALETTE = ["#4C72B0", "#DD8452", "#55A868", "#C44E52"]
 
