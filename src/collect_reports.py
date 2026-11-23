@@ -104,18 +104,36 @@ def round0_table(rows):
         if n < 5:
             print("  還有 {} 人沒回報，**還不能說全員對齊**。".format(5 - n))
 
-    vals = [score(r)[0] for r in rows]
-    kinds = {score(r)[1] for r in rows}
+    # 門檻修好（c1b3a21）之前跑的那些回報行：固定門檻 0.0000 而且沒有 best。
+    # 它們的 0.0000 是門檻高過 maxconf 造成的，不是模型的成績 ——
+    # 拿去跟修好之後的分數比全距，會得到一個看起來很嚴重的假警報。
+    def is_stale(r):
+        return r["best_map"] is None and float(r["fixed_map"]) == 0.0
+
+    stale = [r for r in rows if is_stale(r)]
+    fresh = [r for r in rows if not is_stale(r)]
+
+    if stale:
+        print("- ⚠️ {} 的回報行是**舊門檻（修好之前）跑的**，固定門檻 0.0000 且沒有掃描值。"
+              .format("、".join(r["name"] for r in stale)))
+        print("  那個 0.0000 是門檻高過 maxconf 造成的，不是成績，**不列入下面的比較**。")
+        print("  請他們重跑評分那格與門檻掃描（不用重新訓練）。")
+
+    vals = [score(r)[0] for r in fresh]
+    kinds = {score(r)[1] for r in fresh}
     if len(vals) >= 2:
         spread = max(vals) - min(vals)
         label = "best" if kinds == {"best"} else "各自可取得的最高分數"
         verdict = "✅ 一致" if spread <= TOL else "❌ 超出容許誤差"
-        print("- {}：{}的全距 = **{:.4f}**（容許 ±{}）".format(verdict, label, spread, TOL))
+        print("- {}：{}的全距 = **{:.4f}**（容許 ±{}，{} 人）".format(
+            verdict, label, spread, TOL, len(vals)))
         if spread > TOL:
             print("  差最多的兩個人要一起看 CONFIG 和 YOLO 標註檔。")
-    if all(float(r["fixed_map"]) == 0.0 for r in rows):
-        print("- ⚠️ 所有人固定門檻下都是 0.0000。這**不算通過一致性檢查** ——")
-        print("  管線壞掉的人也會拿到 0.0000。請改看 best 那一欄。")
+    elif len(vals) == 1:
+        print("- ⏳ 只有 {} 一個人有可比較的分數，**還沒辦法做一致性檢查**。"
+              .format(fresh[0]["name"]))
+    elif not fresh:
+        print("- ❌ 沒有任何一筆是修好門檻之後跑的，**這份檢查目前沒有結論**。")
     print()
 
 

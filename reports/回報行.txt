@@ -3,3 +3,4 @@
 
 [林明和] round0 yolov8n imgsz=512 ep=10 seed=42 conf=0.35 shrink=1.0 -> val mAP=0.0000  checksum=2f22fdec3b1c
 [施柏丞] round0 yolov8n imgsz=512 ep=10 seed=42 conf=0.35 shrink=1.0 -> val mAP=0.0000  checksum=2f22fdec3b1c
+[古晏慈] round0 yolov8n imgsz=512 ep=10 mosaic=1.0 batch=16 seed=42 -> mAP@conf0.1=0.1709 best=0.1915(conf=0.07,shrink=1.0) maxconf=0.201 checksum=2f22fdec3b1c
