@@ -36,6 +36,37 @@ from tqdm import tqdm  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config  # noqa: E402
 
+def _clear_font_caches() -> None:
+    """清掉 findfont 查詢結果的快取，否則會一直拿到「找不到」的舊答案。"""
+    import matplotlib.font_manager as fm
+    for owner, name in ((fm.FontManager, "_findfont_cached"), (fm, "_get_font")):
+        try:
+            getattr(owner, name).cache_clear()
+        except Exception:
+            pass
+
+
+def _repair_font_binding() -> bool:
+    """確保 `fm.findfont` 指向目前這個 `fm.fontManager`。
+
+    matplotlib 在模組載入時執行了 `findfont = fontManager.findfont`。
+    只要有任何程式碼換掉過 `fm.fontManager`（這支程式的舊版本就做過），
+    這個繫結就會停留在舊實例上 —— 於是字型清單查得到某個字型，
+    畫圖時卻用不到它。這種狀態下再怎麼 addfont 到新實例都沒有用，
+    必須先把繫結接回來。
+    """
+    import matplotlib.font_manager as fm
+    if getattr(fm.findfont, "__self__", None) is fm.fontManager:
+        return False
+    fm.findfont = fm.fontManager.findfont
+    try:
+        fm.get_font_names = fm.fontManager.get_font_names
+    except AttributeError:
+        pass
+    _clear_font_caches()
+    return True
+
+
 def _refresh_font_cache() -> int:
     """把系統上新裝的字型掃進 matplotlib **現有的** fontManager，回傳新增幾個。
 
@@ -61,13 +92,7 @@ def _refresh_font_cache() -> int:
         except Exception:
             pass   # 壞掉的字型檔跳過就好，不值得讓整支 EDA 停下來
 
-    if added:
-        # 先前查過的結果有快取，不清掉的話還是會拿到「找不到」的舊答案
-        for owner, name in ((fm.FontManager, "_findfont_cached"), (fm, "_get_font")):
-            try:
-                getattr(owner, name).cache_clear()
-            except Exception:
-                pass
+    _clear_font_caches()
     return added
 
 
@@ -97,11 +122,6 @@ def _pick_cjk_font():
     ]
     installed = {f.name for f in fm.fontManager.ttflist}
 
-    if not installed & set(preferred):
-        # 可能是這個 session 剛剛才 apt install 字型，matplotlib 的清單還是舊的
-        if _refresh_font_cache():
-            installed = {f.name for f in fm.fontManager.ttflist}
-
     for name in preferred:
         if name in installed:
             return name
@@ -112,15 +132,37 @@ def _pick_cjk_font():
     return None
 
 
-_CJK_FONT = _pick_cjk_font()
+def _setup_cjk_font():
+    """設定中文字型。回傳 (字型名稱 or None, 實際用到的檔名, 是否成功)。
+
+    判準只有一個：**matplotlib 實際解析到哪個字型檔**。
+    「字型清單裡找得到名稱」不能當判準 —— 清單和畫圖用的是不同的物件時，
+    名稱查得到卻畫成方塊，而且完全不會報錯。
+    """
+    def attempt():
+        name = _pick_cjk_font()
+        families = ([name] if name else []) + ["DejaVu Sans"]
+        file = _resolved_font_file(families)
+        return name, file, (name is not None and not file.startswith("DejaVu"))
+
+    _repair_font_binding()
+    name, file, ok = attempt()
+    if not ok:
+        # 兩種情況都在這裡處理：字型真的沒裝（剛 apt install 完），
+        # 以及字型裝了但 matplotlib 這個 session 的狀態是壞的。
+        _refresh_font_cache()
+        _repair_font_binding()
+        name, file, ok = attempt()
+    return name, file, ok
+
+
+_CJK_FONT, _FONT_FILE, _FONT_OK = _setup_cjk_font()
 plt.rcParams["font.sans-serif"] = ([_CJK_FONT] if _CJK_FONT else []) + ["DejaVu Sans"]
 plt.rcParams["axes.unicode_minus"] = False
 plt.rcParams["figure.dpi"] = 110
 sns.set_theme(style="whitegrid", rc={"font.sans-serif": plt.rcParams["font.sans-serif"]})
 
-# 光是「字型名稱找得到」不夠。matplotlib 的 findfont 可能繫結在另一個
-# fontManager 實例上，結果名稱查得到、畫圖時卻換回 DejaVu Sans。
-# 所以要問 matplotlib：你實際會用哪個檔案？
+# set_theme 也會動字型設定，所以用最終的 rcParams 再確認一次實際解析結果
 _FONT_FILE = _resolved_font_file(plt.rcParams["font.sans-serif"])
 _FONT_OK = _CJK_FONT is not None and not _FONT_FILE.startswith("DejaVu")
 
