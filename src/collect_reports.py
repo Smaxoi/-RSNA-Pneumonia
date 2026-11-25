@@ -16,6 +16,8 @@ import re
 import sys
 
 TOL = 0.02  # 容許誤差：同設定的兩個人差在這個範圍內算一致
+ROUND0_MODEL = "yolov8n"  # Round 0 規定的模型。標 round0 卻不是這個的，
+                          # 實際上是 Round 1 的模型大小變因，標籤打錯了。
 
 
 def _utf8_stdout():
@@ -98,7 +100,7 @@ def round0_table(rows):
     elif len(sums) == 1:
         # 只報「已回報的這幾個人」，不要講成五個人都對上了 ——
         # 沒回報的人可能正拿著不同的 split，說成全員一致會掩蓋這件事。
-        n = sum(1 for r in rows if r["checksum"])
+        n = len({r["name"] for r in rows if r["checksum"]})
         print("- ✅ checksum 一致（`{}`）—— 已回報的 {} 人用的是同一份 val split。".format(
             sums.pop(), n))
         if n < 5:
@@ -119,19 +121,32 @@ def round0_table(rows):
         print("  那個 0.0000 是門檻高過 maxconf 造成的，不是成績，**不列入下面的比較**。")
         print("  請他們重跑評分那格與門檻掃描（不用重新訓練）。")
 
-    vals = [score(r)[0] for r in fresh]
+    # 同一個人用同一個設定跑兩次 -> 那是在量雜訊，不是不一致。
+    # 這個數字很重要：它決定了多大的差距才算「真的有差」。
+    by_name = {}
+    for r in fresh:
+        by_name.setdefault(r["name"], []).append(score(r)[0])
+    repeats = {k: v for k, v in by_name.items() if len(v) >= 2}
+    for name, vs in repeats.items():
+        print("- 🔁 **{}** 同設定重跑 {} 次：{} —— 全距 **{:.4f}**。".format(
+            name, len(vs), "、".join("{:.4f}".format(v) for v in vs),
+            max(vs) - min(vs)))
+        print("  這是**重跑變異**不是不一致。小於這個幅度的差距都不能當成結論。")
+
+    # 跨人比較用各自的平均，免得被重跑的運氣左右
+    means = {k: sum(v) / len(v) for k, v in by_name.items()}
     kinds = {score(r)[1] for r in fresh}
-    if len(vals) >= 2:
-        spread = max(vals) - min(vals)
+    if len(means) >= 2:
+        spread = max(means.values()) - min(means.values())
         label = "best" if kinds == {"best"} else "各自可取得的最高分數"
         verdict = "✅ 一致" if spread <= TOL else "❌ 超出容許誤差"
-        print("- {}：{}的全距 = **{:.4f}**（容許 ±{}，{} 人）".format(
-            verdict, label, spread, TOL, len(vals)))
+        print("- {}：{}的全距 = **{:.4f}**（容許 ±{}，{} 人取平均）".format(
+            verdict, label, spread, TOL, len(means)))
         if spread > TOL:
             print("  差最多的兩個人要一起看 CONFIG 和 YOLO 標註檔。")
-    elif len(vals) == 1:
-        print("- ⏳ 只有 {} 一個人有可比較的分數，**還沒辦法做一致性檢查**。"
-              .format(fresh[0]["name"]))
+    elif len(means) == 1:
+        print("- ⏳ 只有 {} 一個人有可比較的分數，**還沒辦法做跨人一致性檢查**。"
+              .format(next(iter(means))))
     elif not fresh:
         print("- ❌ 沒有任何一筆是修好門檻之後跑的，**這份檢查目前沒有結論**。")
     print()
@@ -195,11 +210,39 @@ def main(argv):
     r1 = [r for r in rows if r["round"] == "round1"]
     other = [r for r in rows if r["round"] is None]
 
+    # 標成 round0 但模型不是 yolov8n 的，實際上是 Round 1 的模型大小變因。
+    # 直接搬過去，不然它們會被當成「同設定的人」去比，然後報出假的不一致。
+    mislabeled = [r for r in r0 if r["model"] and r["model"] != ROUND0_MODEL]
+    if mislabeled:
+        r0 = [r for r in r0 if r not in mislabeled]
+        for r in mislabeled:
+            r["note"] = r["note"] or "模型大小 {}".format(r["model"])
+        r1 = mislabeled + r1
+
     print("<!-- 由 src/collect_reports.py 產生，共讀到 {} 筆回報行 -->".format(len(rows)))
     print()
+    if mislabeled:
+        print("> ⚠️ 有 {} 筆標成 `round0` 但模型不是 `{}`，".format(
+            len(mislabeled), ROUND0_MODEL))
+        print("> 已當成 Round 1 的模型大小變因處理：{}。".format(
+            "、".join("{} {}".format(r["name"], r["model"]) for r in mislabeled)))
+        print("> 請回報的人把標籤改成 `round1`，不然每次都要這樣猜。")
+        print()
     if r0:
         round0_table(r0)
-    baselines = {r["name"]: score(r) for r in r0}
+    # 同一個人有多筆 Round 0 時取平均當基準。
+    # 取最後一筆是錯的：兩次重跑差 0.0119，挑哪一筆會讓差距的正負號翻過來。
+    _base_vals, _base_kinds = {}, {}
+    for r in r0:
+        v, k = score(r)
+        _base_vals.setdefault(r["name"], []).append(v)
+        _base_kinds.setdefault(r["name"], set()).add(k)
+    baselines = {}
+    for name, vs in _base_vals.items():
+        kinds = _base_kinds[name]
+        # 混到不同種類（best vs 固定門檻）就不給基準，交給下游印「基準需重跑」
+        kind = kinds.pop() if len(kinds) == 1 else None
+        baselines[name] = (sum(vs) / len(vs), kind)
     if r1:
         round1_table(r1, baselines)
     if other:
